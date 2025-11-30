@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+
+    <title>Search Books - LibraTrack</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #2941b9;
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .search-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            width: 550px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #2941b9;
+            color: #fff;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .results-heading {
+            width: 100%;
+            text-align: left;
+            margin-bottom: 10px;
+        }
+
+        .book-container {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        .book-image {
+            max-width: 100%;
+            height: 180px;
+            margin-bottom: 10px;
+        }
+
+        .book-details {
+            text-align: left;
+        }
+
+        .book-details div {
+            padding-left: 10px;
+        }
+
+        .user-page-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            background-color: #2941b9;
+            color: #fff;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .book-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            text-align: left;
+            color: #000;
+        }
+
+        .book-results {
+            display: flex;
+        }
+
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
+
+
+        .modal-content {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .close-btn {
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 18px;
+        }
+    </style>
+
+</head>
+
+<body>
+    <h1>LibraTrack</h1>
+    <div class="search-container">
+        <div class="search-input">
+            <form action="/search" method="post">
+                <input type="text" name="search_query" placeholder="What are you looking for?" required>
+                <button type="submit">Search</button>
+            </form>
+        </div>
+
+    </div>
+    <div class="search-results">
+        {% if results %}
+        <h2 class="results-heading">Search Results:</h2>
+        <a href="{{ url_for('user_page') }}" class="user-page-button">Borrowed Books</a>
+        <div class="book-results">
+            <div class="books-grid">
+                {% for book in results %}
+                <div class="book-container" data-title="{{ book.title }}" data-author="{{ book.author }}"
+                    data-description="{{ book.description }}" data-availability="{{ book.display_status() }}"
+                    data-book-id="{{ book.id }}" data-price="{{ book.price }}">
+                    <div class="book-details">
+                        <img src="{{ book.image_url }}" alt="{{ book.title }}" class="book-image">
+                        <div>
+                            <h3>{{ book.title }}</h3>
+                            <p>Author: {{ book.author }}</p>
+                            <p>Price: ${{ book.price }}</p>
+                            <p>Availability: {{ book.display_status() }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    <!-- Book Details Modal -->
+    <div class="book-modal" id="bookModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="hideBookDetails()">&times;</span>
+            <h2 id="modalTitle"></h2>
+            <p id="modalAuthor"></p>
+            <p id="modalDescription"></p>
+            <p id="modalPrice"></p>
+            <p id="modalAvailability"></p>
+            <button id="borrowButton">Borrow</button>
+        </div>
+    </div>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        // Socket.IO connection for real-time updates
+        var currentBookId = null;
+        const socket = io.connect('http://' + document.domain + ':' + location.port + '/update');
+
+        // Listen for book availability updates
+        socket.on('book_update', function (data) {
+            const availabilityElement = document.getElementById('modalAvailability');
+            if (availabilityElement && currentBookId === data.book_id.toString()) {
+                availabilityElement.innerText = 'Availability: ' + data.availability;
+                if (data.message) {
+                    displayNotification(data.message, data.type);
+                }
+            }
+        });
+
+        // Borrow book function (redirects to payment page)
+        function borrowBook(bookId) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+            fetch('/make-payment/' + bookId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    const availabilityElement = document.getElementById('modalAvailability');
+                    if (availabilityElement) {
+                        availabilityElement.innerText = 'Availability: ' + data.availability;
+                        displayNotification(data.message, data.type);
+                    }
+
+                    hideBookDetails();
+
+                    if (data.success) {
+                        window.location.href = data.redirect;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+        // Show book details in modal
+        function showBookDetails(title, author, description, availability, bookId, price) {
+            currentBookId = bookId;
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalAuthor').innerText = 'Author: ' + author;
+            document.getElementById('modalDescription').innerHTML = 'Description: ' + description;
+            document.getElementById('modalPrice').innerText = 'Price: $' + price;
+            document.getElementById('modalAvailability').innerText = 'Availability: ' + availability;
+
+            const borrowButton = document.getElementById('borrowButton');
+            if (availability === 'Unavailable') {
+                borrowButton.disabled = true;
+                borrowButton.innerText = 'Not Available';
+            } else {
+                borrowButton.disabled = false;
+                borrowButton.innerText = 'Borrow';
+                borrowButton.onclick = function () {
+                    redirectToPayment(bookId);
+                };
+            }
+
+            document.getElementById('bookModal').style.display = 'flex';
+        }
+
+        // Use event delegation to handle clicks on book containers
+        // Attach to document so it works even after page reloads from search
+        document.addEventListener('click', function (event) {
+            // Find the closest book-container element
+            const bookContainer = event.target.closest('.book-container');
+            if (bookContainer) {
+                event.preventDefault();
+                event.stopPropagation();
+                const title = bookContainer.getAttribute('data-title');
+                const author = bookContainer.getAttribute('data-author');
+                const description = bookContainer.getAttribute('data-description');
+                const availability = bookContainer.getAttribute('data-availability');
+                const bookId = parseInt(bookContainer.getAttribute('data-book-id'));
+                const price = bookContainer.getAttribute('data-price');
+                showBookDetails(title, author, description, availability, bookId, price);
+            }
+        });
+
+        // Redirect to payment page
+        function redirectToPayment(bookId) {
+            window.location.href = "/payment/" + bookId;
+        }
+
+        // Hide book details modal
+        function hideBookDetails() {
+            document.getElementById('bookModal').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

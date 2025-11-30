@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - LibraTrack</title>
+    <style>
+        body {
+            font-family: 'Raleway', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+            color: #2941b9;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 300px;
+        }
+
+        label {
+            margin-bottom: 10px;
+        }
+
+        input {
+            padding: 10px;
+            margin-bottom: 10px;
+            width: 300px;
+            border-radius: 15px;
+            border-style: none;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #2941b9;
+            color: #fff;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            width: 150px;
+        }
+
+        button:hover {
+            background-color: #21618c;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Register for LibraTrack</h1>
+        <p>Create a new account to explore and manage your library resources.</p>
+    </header>
+
+    <main>
+        <section>
+            <form method="post" action="/register">
+                <label for="user_id">Username:</label>
+                <input type="text" id="user_id" name="user_id" required>
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+
+                <button type="submit">Register</button>
+            </form>
+            {% if message %}
+                {% if success %}
+                <p style="color: green; margin-top: 10px;">{{ message }}</p>
+                {% else %}
+                <p style="color: red; margin-top: 10px;">{{ message }}</p>
+                {% endif %}
+            {% endif %}
+            <p style="margin-top: 20px;">Already have an account? <a href="/user-login">Login here</a>.</p>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 Library Management System</p>
+    </footer>
+</body>
+
+</html>

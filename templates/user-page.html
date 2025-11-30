@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+
+    <title>Return Books - LibraTrack</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            text-align: left;
+        }
+
+        h1 {
+            color: #2941b9;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+
+        li {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 10px;
+            box-sizing: border-box;
+            width: 200px;
+        }
+
+        h3 {
+            color: #2941b9;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin: 10px 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        button.return-button {
+            padding: 8px;
+            background-color: #2941b9;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+        }
+
+        button.return-button:hover {
+            background-color: #21618c;
+        }
+
+        p.no-books-message {
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>User Page - Borrowed Books</h1>
+    {% if borrowed_books %}
+    <ul>
+        {% for book in borrowed_books %}
+        <li data-book-id="{{ book.id }}">
+            <h3>{{ book.title }}</h3>
+            <p>Author: {{ book.author }}</p>
+            <img src="{{ book.image_url }}" alt="{{ book.title }}">
+            <button class="return-button" data-book-id="{{ book.id }}">Return</button>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="no-books-message">No borrowed books</p>
+    {% endif %}
+    {% if message %}
+    <p style="color: red;">{{ message }}</p>
+    {% endif %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const returnButtons = document.querySelectorAll('.return-button');
+            returnButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const bookId = this.getAttribute('data-book-id');
+                    returnBook(bookId);
+                });
+            });
+        });
+
+        function returnBook(bookId) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+            fetch('/return/' + bookId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    const borrowedBookElement = document.querySelector(`li[data-book-id="${bookId}"]`);
+                    if (borrowedBookElement) {
+                        borrowedBookElement.remove();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+</body>
+
+</html>

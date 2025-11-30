@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+
+    <title>Payment - LibraTrack</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2941b9;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        label {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        select {
+            padding: 10px;
+            width: 200px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px;
+            background-color: #2941b9;
+            color: #fff;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            width: 200px;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #21618c;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Payment Page</h1>
+    <p>You are about to borrow the book: <strong>{{ book.title }}</strong></p>
+    <p>Price: <strong>${{ price }}</strong></p>
+
+    <form id="paymentForm" action="{{ url_for('make_payment', book_id=book.id) }}" method="post">
+        <label for="payment_method">Select Payment Method:</label>
+        <select id="payment_method" name="payment_method" required>
+            <option value="card">Credit Card</option>
+            <option value="upi">UPI</option>
+        </select>
+
+        <div id="cardFields" style="display: none;">
+            <label for="card_number">Card Number:</label>
+            <input type="text" id="card_number" name="card_number" required>
+        </div>
+
+        <div id="upiFields" style="display: none;">
+            <label for="upi_id">UPI ID:</label>
+            <input type="text" id="upi_id" name="upi_id" required>
+        </div>
+
+        <button type="button" onclick="submitPaymentForm()">Make Payment</button>
+    </form>
+
+    <script>
+        // Handle payment form submission
+        function submitPaymentForm() {
+            const form = document.getElementById('paymentForm');
+            const paymentMethod = document.getElementById('payment_method').value;
+            const cardFields = document.getElementById('cardFields');
+            const upiFields = document.getElementById('upiFields');
+            const cardNumber = document.getElementById('card_number');
+            const upiId = document.getElementById('upi_id');
+
+            if (
+                (paymentMethod === 'card' && cardFields.style.display === 'block' && cardNumber.value.trim() !== '') ||
+                (paymentMethod === 'upi' && upiFields.style.display === 'block' && upiId.value.trim() !== '')
+            ) {
+                const formData = new FormData(form);
+
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                    },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+
+                        if (data.success) {
+                            cardNumber.value = '';
+                            upiId.value = '';
+                            window.location.href = data.redirect;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            } else {
+                alert('Please enter a valid card number for card payment or a valid UPI ID for UPI payment.');
+            }
+        }
+
+        // Get CSRF token from meta tag
+        function getCSRFToken() {
+            const csrfTag = document.head.querySelector("[name=csrf-token]");
+            return csrfTag ? csrfTag.content : '';
+        }
+
+        // Show/hide payment fields based on selected method
+        document.getElementById('payment_method').addEventListener('change', function () {
+            const paymentMethod = this.value;
+            const cardFields = document.getElementById('cardFields');
+            const upiFields = document.getElementById('upiFields');
+
+            if (paymentMethod === 'card') {
+                cardFields.style.display = 'block';
+                upiFields.style.display = 'none';
+            } else if (paymentMethod === 'upi') {
+                cardFields.style.display = 'none';
+                upiFields.style.display = 'block';
+            } else {
+                cardFields.style.display = 'none';
+                upiFields.style.display = 'none';
+            }
+        });
+    </script>
+
+</body>
+
+</html>
