@@ -2,7 +2,7 @@
 
 A simple, lightweight library management system built with Flask that allows users to search, borrow, and return books. This project demonstrates various software design patterns including State, Observer, Strategy, Singleton, and Iterator patterns.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Backend**: Flask 3.0.0
 - **Real-time Communication**: Flask-SocketIO 5.3.6
@@ -10,7 +10,7 @@ A simple, lightweight library management system built with Flask that allows use
 - **Frontend**: HTML5, CSS3, JavaScript
 - **Data Storage**: Pickle (file-based persistence)
 
-## 📋 Features
+## Features
 
 - **User Authentication**: Register and login system with secure password hashing
 - **Book Search**: Search for books by title (case-insensitive)
@@ -20,7 +20,7 @@ A simple, lightweight library management system built with Flask that allows use
 - **Payment Integration**: Support for multiple payment methods (Card, UPI)
 - **User Dashboard**: View all borrowed books in one place
 
-## 🚀 How to Run
+## How to Run
 
 ### Prerequisites
 
